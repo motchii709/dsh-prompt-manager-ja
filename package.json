@@ -1,0 +1,114 @@
+{
+  "name": "@motchii709/dsh-prompt-manager-ja",
+  "version": "3.4.0-rc.2-ja.1",
+  "description": "Japanese-localized fork of @lolkda/dsh-prompt-manager. Manage DeepSeek Harness system-prompt sections from the Web GUI: enable, edit, and subscribe markdown prompt entries, switch named presets from the composer, feed them machine facts as {{variables}}, replace the instruction DSH sends when it compacts the context, and carry a preset to another machine as a JSON pack.",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": "./client/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "client",
+    "cordis.patch.yml",
+    "environment.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node --check client/client.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:build": "npm run build && node tools/check-build.mjs",
+    "check:pack": "node tools/check-pack.mjs",
+    "prepublishOnly": "npm run build",
+    "pretest": "npm run build",
+    "test": "node test/smoke.mjs && node test/config-schema.mjs && node test/probe.mjs && node test/guard.mjs && node test/store.mjs && node test/pack.mjs && node test/routes.mjs && node test/source.mjs && node test/net.mjs && node test/sync.mjs && node test/subscriptions.mjs && node test/scripts.mjs && node test/compaction.mjs && node test/client.mjs && node test/manifest.mjs && node test/settings-source.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "cordis-plugin",
+    "system-prompt",
+    "prompt",
+    "settings",
+    "sessions"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/motchii709/dsh-prompt-manager-ja.git"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    },
+    "compatibility": {
+      "dsh": "0.1.7-rc.1",
+      "dshReleases": {
+        "0.1.7-rc.1": "compatible"
+      },
+      "dshOperations": {
+        "0.1.7-rc.1": {
+          "install": "passed",
+          "start": "passed",
+          "uninstall": "unknown",
+          "rollback": "unknown"
+        }
+      },
+      "profiles": [
+        "web"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "4.0.4",
+    "@deepseek-ai/cordis-plugin-loader": "1.0.5",
+    "@deepseek-ai/dsh-llm": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-system-prompt": "0.1.7-rc.1",
+    "@deepseek-ai/schemastery": "3.18.4"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-llm": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-system-prompt": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.4",
+    "@deepseek-ai/cordis-plugin-loader": "1.0.5",
+    "@deepseek-ai/dsh-llm": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-system-prompt": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-tools": "0.1.7-rc.1",
+    "@deepseek-ai/schemastery": "3.18.4",
+    "@types/node": "^26.5.0",
+    "typescript": "^5.9.3"
+  }
+}

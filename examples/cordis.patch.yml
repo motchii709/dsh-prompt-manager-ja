@@ -1,0 +1,98 @@
+# Mount dsh-prompt-manager in a DeepSeek Harness profile.
+#
+# You do not need this file for the normal install: running
+# `dsh plugin --profile <profile> add github:lolkda/dsh-prompt-manager` (or
+# `add @lolkda/dsh-prompt-manager` once it is on npm) installs the dependency, and
+# DSH then finds `dsh.bundle.patch` in its manifest and applies the package's own
+# `cordis.patch.yml` for you — the row below is what that file already inserts.
+# These blocks are for mounting a checkout by hand (offline, or developing).
+#
+# To do it by hand, append ONE of these blocks to
+# `$DSH_HOME/profiles/<profile>/cordis.patch.yml` (the user patch layer, applied
+# after every bundle layer), then restart the profile. `patchReload: live`
+# profiles pick the config edit up without a restart, but this package also ships
+# a browser half (`client/client.js`, declared through `dsh.client` in
+# package.json) whose bundle and metadata are snapshotted at startup: adding or
+# changing those needs a restart. Installing the package AND keeping a block here
+# mounts the plugin twice — pick one.
+#
+# DSH 0.1.7-rc.1 keys native settings by Loader entry id. Keep `prompt-manager`
+# so the previous settings.yaml section imports into this exact entry.
+
+# ── Option A: mount a local checkout by relative path ────────────────────────
+# The loader resolves a leading `./` against the profile directory
+# (`new URL(name, ctx.baseUrl)`), so this points at
+# `$DSH_HOME/profiles/<profile>/vendor/dsh-prompt-manager/lib/index.js`.
+# Copy or symlink this repository to that path first.
+- insert:
+    - id: prompt-manager
+      name: './vendor/dsh-prompt-manager/lib/index.js'
+
+# ── Option B: mount an installed package by name ────────────────────────────
+# Run `dsh plugin --profile <profile> add github:lolkda/dsh-prompt-manager`, then
+# use the installed package name. (Installing it already mounts it, so this block
+# is only for a profile whose layer list you manage yourself.)
+# - insert:
+#     - id: prompt-manager
+#       name: '@lolkda/dsh-prompt-manager'
+
+# ── The whole config ────────────────────────────────────────────────────────
+# The package ships one prompt body (environment.md, entry id `env`), and the
+# only things left to configure are the variables it registers, the commands it
+# probes, and where per-entry bodies live. Placement, section names, and the
+# bodies themselves are per-entry and live in Settings → プロンプト.
+#
+# environment:   register {{os}} {{os_release}} {{platform}} {{arch}} (default true)
+# variables:     extra {{name}} variables with fixed values; names must match
+#                [a-z][a-z0-9_]* and must not repeat a registered one
+# probes:        commands run once at mount, one variable each. Value is the
+#                first non-empty stdout or stderr line, narrowed by `pattern`
+#                when present. Absent / silent / slow tools become a placeholder
+#                instead, so a reference never renders empty. At most 64.
+#                Merged by name over the package's own defaults, which are the
+#                five the built-in entry references: pwsh, bash, git, node, python.
+# probeDefaults: run those package defaults as well (default true). Turning them
+#                off while the built-in entry is in force leaves its variables
+#                unregistered, which fails assembly rather than rendering empty.
+# probeTexts:    replace those placeholders (missing / empty / timeout / skipped)
+# probeBudgetMs: ceiling on the whole pass (default 8000); the rest are skipped
+# storeDir:      directory holding one markdown file per entry, under its
+#                `sections/` leaf, and one script per file under its `scripts/`
+#                leaf (default $DSH_HOME/prompt-manager). The index
+#                (title / order / enabled) lives in $DSH_HOME/settings.yaml under
+#                the `prompt-manager:` key, written by Settings → プロンプト.
+# scripts:       per-script execution overrides for the user scripts under
+#                `scripts/`. A script prints a JSON object, and its keys become
+#                prompt variables, so one script can supply many. Defaults to
+#                `node <script>` with a 3s timeout; `{script}` in `args` becomes
+#                the script's absolute path. Every successful run is cached, so a
+#                profile start serves the last measured values without executing
+#                anything. Scripts run as the host user, with no sandbox.
+# compaction:    allow replacing the instruction DSH sends to its summarizer with
+#                the body of the entry the index points at, chosen in
+#                Settings → プロンプト (default true). The default changes nothing: a
+#                deployment that never made such an entry sends every compaction
+#                call exactly as the engine built it, byte for byte. Set false
+#                when another row owns that seam, or to keep this plugin strictly
+#                to the system prompt.
+#
+# Example with every value set:
+# - insert:
+#     - id: prompt-manager
+#       name: './vendor/dsh-prompt-manager/lib/index.js'
+#       config:
+#         environment: true
+#         compaction: true
+#         variables:
+#           shell: 'PowerShell 7 (pwsh)'
+#         probes:
+#           pwsh:   { command: pwsh, args: ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.ToString()'] }
+#           git:    { command: git, args: ['--version'], pattern: '([0-9]+\.[0-9]+\.[0-9]+)' }
+#           node:   { command: node, args: ['--version'], pattern: 'v?([0-9.]+)' }
+#           python: { command: python, args: ['--version'], pattern: '([0-9.]+)' }
+#           rust:   { command: rustc, args: ['--version'] }
+#         scripts:
+#           toolchain: { timeoutMs: 5000 }
+#           inventory: { command: 'python', args: ['{script}'] }
+#         probeTexts: { missing: 'なし' }
+#         storeDir: 'C:/Users/me/.dsh/prompt-manager'

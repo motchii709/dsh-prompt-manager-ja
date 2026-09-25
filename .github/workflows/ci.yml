@@ -1,0 +1,45 @@
+name: ci
+
+# Every push to main and every pull request: build from source, run the suite on both
+# platforms the plugin ships to, and prove the committed build output still matches the
+# sources. Nothing here talks to npm — releasing is release.yml, triggered by a tag.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      # One platform failing should not hide the other's result.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+      # `lib/` and `client/` ship as-is, so a stale committed build would be served to
+      # everyone installing from this commit. This compares the fresh build against what
+      # the commit carries.
+      - name: committed lib/ must be a build of these sources
+        run: node tools/check-build.mjs
+
+      # The manifest contract that `dsh plugin add` and the DSH Store read: the bundle
+      # patch, the browser half, the built host. Metadata and build output, so no test
+      # in test/ covers it — this is the gate.
+      - name: the tarball must carry the bundle patch, the browser half, and the built host
+        run: npm run check:pack

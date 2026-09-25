@@ -1,0 +1,20 @@
+# The dsh-prompt-manager bundle patch: mounting this package is one insert.
+#
+# A profile that installs this package gains this row automatically — `dsh plugin
+# add` (and any other install path) reconciles `dsh.profile.bundles` against the
+# installed dependencies, and a dependency whose manifest declares
+# `dsh.bundle.patch` joins the layer stack. The row mounts the Host half, which is
+# also what makes the browser half load: the client module system serves the
+# `exports["./client"]` bundle of every package that declares `dsh.client` *and* is
+# an active Loader entry.
+#
+# No `config` here on purpose: the plugin's own defaults (machine-environment facts
+# registered as variables) are what a fresh install wants. Disable or repoint them
+# in the profile's own cordis.patch.yml, which applies after every bundle layer.
+#
+# DSH 0.1.7 configuration forms use the Loader entry id as their namespace.
+# Keep the legacy `prompt-manager` namespace so saved preferences import natively.
+
+- insert:
+    - id: prompt-manager
+      name: '@motchii709/dsh-prompt-manager-ja'
