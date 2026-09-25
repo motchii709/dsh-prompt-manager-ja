@@ -8,8 +8,7 @@
  * panel's narrow column is spent on one thing at a time.
  *
  * The index (title, order, enabled) rides the shared settings transport through
- * `ctx.configForms.get(entryId)` — the entry id being this package's Loader row,
- * which is also the settings namespace on DSH 0.1.7; the bodies ride the plugin's
+ * `ctx.settingsScope`; the bodies ride the plugin's
  * own `/dsh-prompt-manager` route, because they are markdown files on disk.
  *
  * Built in the client module system's lazy-CJS factory format by hand, so the
@@ -21,7 +20,7 @@
  * that is how the client module system ties this bundle to its Loader row.
  */
 window.__ModuleLoader__.load({
-  id: '@lolkda/dsh-prompt-manager',
+  id: '@motchii709/dsh-prompt-manager-ja',
   factory: (require) => {
     const React = require('react')
     const primitives = require('@deepseek-ai/dsh-client-ui-primitives')
@@ -688,23 +687,25 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * Write one settings field and report whether the Host accepted it.
+     * Write one settings field and report whether the Host stored it.
      *
-     * The published peer is DSH 0.1.7-rc.1, whose form answers a boolean: `true`
-     * only for a write the Host accepted, `false` for one it refused (it rejects
-     * nothing, and a memory-mode form answers `false` too). Every write in this
-     * bundle goes through here, so exactly one place decides what "accepted" means
-     * and no caller can mistake anything else for a save — including the silence of
-     * a form that answers no verdict at all, which is outside the contract and is
-     * never read as a save.
+     * DSH 0.1.2-rc.1's scope settles rather than answering a boolean: a write
+     * that lands resolves, one that cannot land rejects. Every write in this
+     * bundle goes through here, so exactly one place decides what "stored" means
+     * and no caller can mistake anything else for a save.
      *
-     * @param form - this plugin's settings form.
+     * @param form - this plugin's settings scope.
      * @param field - the field to write.
      * @param value - the complete next value of that field.
-     * @returns whether the Host accepted the write.
+     * @returns whether the Host stored the write.
      */
     async function accepted(form, field, value) {
-      return (await form.set(field, value)) === true
+      try {
+        await form.set(field, value)
+        return true
+      } catch {
+        return false
+      }
     }
 
     /**
@@ -2773,29 +2774,26 @@ window.__ModuleLoader__.load({
 
     const name = 'dsh-prompt-manager'
 
-    // `configForms` is a hard requirement: this section is nothing but the
+    // `settingsScope` is a hard requirement: this section is nothing but the
     // index it serves, so a host without the settings domain mounts nothing
-    // rather than rendering controls that cannot persist. DSH 0.1.7 replaced the
-    // per-plugin `settingsScope` service with `configForms`, whose forms are
-    // keyed by Host entry id — which is why the namespace below is this
-    // package's Loader entry id.
+    // rather than rendering controls that cannot persist.
     //
     // `sessions` is deliberately not injected: both chips take the conversation's
     // id from the session-scoped slot they are drawn in, which is the same answer
     // without depending on a list snapshot — 0.1.6 dropped the `current` field the
     // 3.2.1 bundle read there, and that is what broke the switches.
-    const inject = ['slots', 'configForms']
+    const inject = ['slots', 'settingsScope']
 
     /**
      * Register the settings section and the composer chip.
      *
-     * One bundle, one settings form, two surfaces: the page where presets are
+     * One bundle, one settings scope, two surfaces: the page where presets are
      * authored, and the control beside the input box that switches between them.
      * Both read the same namespace, so neither has to tell the other anything.
      * @param ctx - the browser plugin context.
      */
     function apply(ctx) {
-      const scope = ctx.configForms.get(NAMESPACE)
+      const scope = ctx.settingsScope.bind({ namespace: NAMESPACE })
       ctx.effect(() => {
         const tag = injectStyle()
         return () => { if (tag !== null) tag.remove() }
