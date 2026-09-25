@@ -457,12 +457,16 @@ export function buildIndexSchema(factory: SchemaFactory): unknown {
  * @returns the schema the Loader resolves, with every index field live.
  */
 export function buildConfigSchema(factory: SchemaFactory): unknown {
+  // schemastery >= 3.18.4 (DSH 0.1.7-rc.1) marks these fields as volatile so the
+  // Loader does not persist them. DSH 0.1.2-rc.1 ships schemastery 3.18.2, which
+  // has no volatile(); the marker is optional there.
+  const volatileField = (node: SchemaNode): SchemaNode => (typeof node.volatile === 'function' ? node.volatile() : node)
   const index = buildIndexSchema(factory) as { dict: Record<string, SchemaNode> }
   const shape: Record<string, SchemaNode> = {}
   for (const [key, node] of Object.entries(index.dict)) {
-    shape[key] = key === 'entries' ? node.default(builtinEntries()).volatile() : node.volatile()
+    shape[key] = key === 'entries' ? volatileField(node.default(builtinEntries()) as SchemaNode) : volatileField(node)
   }
-  shape['compaction'] = factory.union([factory.string(), factory.boolean()]).default(true).volatile()
+  shape['compaction'] = volatileField(factory.union([factory.string(), factory.boolean()]).default(true) as SchemaNode)
   return factory.object(shape)
 }
 
